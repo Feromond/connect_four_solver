@@ -1,5 +1,6 @@
 use crate::{Board, COLS, Cell, Player, ROWS, Solver};
 use eframe::egui;
+use std::time::{Duration, Instant};
 
 pub struct ConnectFourApp {
     board: Board,
@@ -8,6 +9,7 @@ pub struct ConnectFourApp {
     thinking: bool,
     game_mode: GameMode,
     ai_moves_to_win: Option<u8>, // Track if AI has a guaranteed win path
+    ai_move_timer: Option<Instant>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -25,6 +27,7 @@ impl Default for ConnectFourApp {
             thinking: false,
             game_mode: GameMode::Setup,
             ai_moves_to_win: None,
+            ai_move_timer: None,
         }
     }
 }
@@ -57,28 +60,41 @@ impl eframe::App for ConnectFourApp {
             });
         });
 
-        // AI move logic
-        if let Some(ai_player) = self.ai_player {
-            if self.board.current_player() == ai_player
-                && !self.board.is_game_over()
-                && !self.thinking
-            {
-                self.thinking = true;
-
-                if let Some(move_result) = self.solver.find_best_move(&self.board, 7) {
-                    self.board.make_move(move_result.column);
-                    self.ai_moves_to_win = move_result.moves_to_win;
-                }
-
-                self.thinking = false;
-            }
-        }
-
+        self.process_ai_move_with_delay();
         ctx.request_repaint();
     }
 }
 
 impl ConnectFourApp {
+    fn process_ai_move_with_delay(&mut self) {
+        if let Some(ai_player) = self.ai_player {
+            if self.board.current_player() == ai_player
+                && !self.board.is_game_over()
+                && !self.thinking
+            {
+                if self.ai_move_timer.is_none() {
+                    self.ai_move_timer = Some(Instant::now());
+                }
+
+                if let Some(timer) = self.ai_move_timer {
+                    if timer.elapsed() >= Duration::from_millis(300) {
+                        self.thinking = true;
+                        self.ai_move_timer = None;
+
+                        if let Some(move_result) = self.solver.find_best_move(&self.board, 7) {
+                            self.board.make_move(move_result.column);
+                            self.ai_moves_to_win = move_result.moves_to_win;
+                        }
+
+                        self.thinking = false;
+                    }
+                }
+            } else {
+                self.ai_move_timer = None;
+            }
+        }
+    }
+
     fn show_setup_screen(&mut self, ui: &mut egui::Ui) {
         ui.group(|ui| {
             ui.set_min_width(300.0);
@@ -91,7 +107,6 @@ impl ConnectFourApp {
                 );
                 ui.add_space(15.0);
 
-                // Styled buttons
                 if ui
                     .add_sized(
                         [250.0, 40.0],
@@ -105,6 +120,7 @@ impl ConnectFourApp {
                     self.game_mode = GameMode::Playing;
                     self.board.reset();
                     self.ai_moves_to_win = None;
+                    self.ai_move_timer = None;
                 }
 
                 ui.add_space(10.0);
@@ -120,6 +136,7 @@ impl ConnectFourApp {
                     self.game_mode = GameMode::Playing;
                     self.board.reset();
                     self.ai_moves_to_win = None;
+                    self.ai_move_timer = Some(Instant::now()); // Start timer for AI first move
                 }
 
                 ui.add_space(10.0);
@@ -135,15 +152,26 @@ impl ConnectFourApp {
                 if self.board.is_game_over() {
                     match self.board.winner() {
                         Some(winner) => {
-                            let winner_text = format!("🎉 {} WINS! 🎉", winner.to_string().to_uppercase());
+                            let winner_text =
+                                format!("🎉 {} WINS! 🎉", winner.to_string().to_uppercase());
                             let color = match winner {
                                 Player::Red => egui::Color32::from_rgb(200, 50, 50),
                                 Player::Yellow => egui::Color32::from_rgb(200, 150, 50),
                             };
-                            ui.label(egui::RichText::new(winner_text).size(24.0).strong().color(color));
+                            ui.label(
+                                egui::RichText::new(winner_text)
+                                    .size(24.0)
+                                    .strong()
+                                    .color(color),
+                            );
                         }
                         None => {
-                            ui.label(egui::RichText::new("🤝 IT'S A DRAW! 🤝").size(24.0).strong().color(egui::Color32::DARK_BLUE));
+                            ui.label(
+                                egui::RichText::new("🤝 IT'S A DRAW! 🤝")
+                                    .size(24.0)
+                                    .strong()
+                                    .color(egui::Color32::DARK_BLUE),
+                            );
                         }
                     }
                 } else {
@@ -162,12 +190,23 @@ impl ConnectFourApp {
                         format!("{} Current Player: {}", emoji, current_player.to_string())
                     };
 
-                    ui.label(egui::RichText::new(status_text).size(18.0).strong().color(color));
+                    ui.label(
+                        egui::RichText::new(status_text)
+                            .size(18.0)
+                            .strong()
+                            .color(color),
+                    );
 
                     if let Some(ai_player) = self.ai_player {
-                        if self.board.current_player() == ai_player && self.thinking {
+                        if self.board.current_player() == ai_player
+                            && (self.thinking || self.ai_move_timer.is_some())
+                        {
                             ui.add_space(5.0);
-                            ui.label(egui::RichText::new("🤔 AI is thinking...").size(14.0).color(egui::Color32::GRAY));
+                            ui.label(
+                                egui::RichText::new("🤔 AI is thinking...")
+                                    .size(14.0)
+                                    .color(egui::Color32::GRAY),
+                            );
                         }
                     }
 
@@ -176,13 +215,26 @@ impl ConnectFourApp {
                             if self.board.current_player() == ai_player {
                                 // AI has calculated a win and it's AI's turn
                                 ui.add_space(8.0);
-                                let win_text = format!("🧠 AI has found a winning path! Victory in {moves_to_win} moves");
-                                ui.label(egui::RichText::new(win_text).size(16.0).strong().color(egui::Color32::from_rgb(0, 150, 0)));
+                                let win_text = format!(
+                                    "🧠 AI has found a winning path! Victory in {moves_to_win} moves"
+                                );
+                                ui.label(
+                                    egui::RichText::new(win_text)
+                                        .size(16.0)
+                                        .strong()
+                                        .color(egui::Color32::from_rgb(0, 150, 0)),
+                                );
                             } else {
                                 // AI has calculated a win but it's human's turn
                                 ui.add_space(8.0);
-                                let win_text = format!("🎯 AI will win in {moves_to_win} moves (barring mistakes)");
-                                ui.label(egui::RichText::new(win_text).size(15.0).color(egui::Color32::from_rgb(100, 100, 100)));
+                                let win_text = format!(
+                                    "🎯 AI will win in {moves_to_win} moves (barring mistakes)"
+                                );
+                                ui.label(
+                                    egui::RichText::new(win_text)
+                                        .size(15.0)
+                                        .color(egui::Color32::from_rgb(100, 100, 100)),
+                                );
                             }
                         }
                     }
@@ -204,7 +256,6 @@ impl ConnectFourApp {
                 egui::Vec2::new(board_width, board_height),
                 egui::Sense::click(),
             );
-
             let painter = ui.painter();
 
             painter.rect_filled(rect, 8.0, egui::Color32::from_rgb(41, 98, 255));
@@ -242,15 +293,19 @@ impl ConnectFourApp {
 
             if response.clicked() {
                 if let Some(ai_player) = self.ai_player {
-                    if self.board.current_player() != ai_player && !self.board.is_game_over() {
+                    if self.board.current_player() != ai_player
+                        && !self.board.is_game_over()
+                        && !self.thinking
+                        && self.ai_move_timer.is_none()
+                    {
                         if let Some(pos) = response.interact_pointer_pos() {
                             let relative_pos = pos - rect.min;
                             let col = (relative_pos.x / cell_size) as usize;
 
                             if col < COLS && self.board.is_valid_move(col) {
                                 self.board.make_move(col);
-                                // Reset AI analysis after human move
                                 self.ai_moves_to_win = None;
+                                self.ai_move_timer = Some(Instant::now());
                             }
                         }
                     }
@@ -274,6 +329,7 @@ impl ConnectFourApp {
                 self.board.reset();
                 self.ai_player = None;
                 self.ai_moves_to_win = None;
+                self.ai_move_timer = None;
             }
 
             ui.add_space(20.0);
@@ -287,6 +343,7 @@ impl ConnectFourApp {
             {
                 self.board.reset();
                 self.ai_moves_to_win = None;
+                self.ai_move_timer = None;
             }
         });
 
