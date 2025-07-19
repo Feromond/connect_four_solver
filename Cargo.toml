@@ -2,8 +2,26 @@
 name = "connect_four_solver"
 version = "0.1.0"
 edition = "2024"
+authors = ["Jacob Mish <JacobPMish@gmail.com>"]
+description = "Simple GUI to solve Connect Four games"
+license = "MIT"
+
+[build-dependencies]
+winresource = "0.1.23"
 
 [dependencies]
 eframe = "0.32.0"
 egui = "0.32.0"
 serde = { version = "1.0.219", features = ["derive"] }
+image = "0.25.6"
+
+
+[dependencies.winapi]
+version = "0.3.9"
+features = ["winuser", "windef"]
+
+[package.metadata.bundle]
+name = "Connect Four Solver"
+identifier = "io.github.Feromond.connect_four_solver"
+description = "Simple GUI to solve Connect Four games"
+icon = ["./icon.png"]
