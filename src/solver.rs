@@ -23,14 +23,19 @@ impl Solver {
         }
 
         let mut best_move = valid_moves[0];
-        let mut best_score = i32::MIN;
+        
+        // Determine if AI should maximize or minimize based on current player
+        // Red maximizes (seeks positive scores), Yellow minimizes (seeks negative scores)
+        let ai_maximizes = board.current_player() == Player::Red;
+        let mut best_score = if ai_maximizes { i32::MIN } else { i32::MAX };
 
         for &col in &valid_moves {
             let mut new_board = board.clone();
             new_board.make_move(col);
-            let score = self.minimax(&new_board, depth, i32::MIN, i32::MAX, false);
+            // After making the move, it's the opponent's turn, so flip the maximizing flag
+            let score = self.minimax(&new_board, depth, i32::MIN, i32::MAX, !ai_maximizes);
             
-            if score > best_score {
+            if (ai_maximizes && score > best_score) || (!ai_maximizes && score < best_score) {
                 best_score = score;
                 best_move = col;
             }
