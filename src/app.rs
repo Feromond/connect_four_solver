@@ -7,6 +7,7 @@ pub struct ConnectFourApp {
     ai_player: Option<Player>,
     thinking: bool,
     game_mode: GameMode,
+    ai_moves_to_win: Option<u8>, // Track if AI has a guaranteed win path
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -23,6 +24,7 @@ impl Default for ConnectFourApp {
             ai_player: None,
             thinking: false,
             game_mode: GameMode::Setup,
+            ai_moves_to_win: None,
         }
     }
 }
@@ -55,6 +57,7 @@ impl eframe::App for ConnectFourApp {
             });
         });
 
+        // AI move logic
         if let Some(ai_player) = self.ai_player {
             if self.board.current_player() == ai_player
                 && !self.board.is_game_over()
@@ -62,8 +65,9 @@ impl eframe::App for ConnectFourApp {
             {
                 self.thinking = true;
 
-                if let Some(best_col) = self.solver.find_best_move(&self.board, 7) {
-                    self.board.make_move(best_col);
+                if let Some(move_result) = self.solver.find_best_move(&self.board, 7) {
+                    self.board.make_move(move_result.column);
+                    self.ai_moves_to_win = move_result.moves_to_win;
                 }
 
                 self.thinking = false;
@@ -100,6 +104,7 @@ impl ConnectFourApp {
                     self.ai_player = Some(Player::Yellow);
                     self.game_mode = GameMode::Playing;
                     self.board.reset();
+                    self.ai_moves_to_win = None;
                 }
 
                 ui.add_space(10.0);
@@ -114,6 +119,7 @@ impl ConnectFourApp {
                     self.ai_player = Some(Player::Red);
                     self.game_mode = GameMode::Playing;
                     self.board.reset();
+                    self.ai_moves_to_win = None;
                 }
 
                 ui.add_space(10.0);
@@ -126,30 +132,18 @@ impl ConnectFourApp {
             ui.set_min_width(400.0);
             ui.vertical_centered(|ui| {
                 ui.add_space(5.0);
-
                 if self.board.is_game_over() {
                     match self.board.winner() {
                         Some(winner) => {
-                            let winner_text =
-                                format!("🎉 {} WINS! 🎉", winner.to_string().to_uppercase());
+                            let winner_text = format!("🎉 {} WINS! 🎉", winner.to_string().to_uppercase());
                             let color = match winner {
                                 Player::Red => egui::Color32::from_rgb(200, 50, 50),
                                 Player::Yellow => egui::Color32::from_rgb(200, 150, 50),
                             };
-                            ui.label(
-                                egui::RichText::new(winner_text)
-                                    .size(24.0)
-                                    .strong()
-                                    .color(color),
-                            );
+                            ui.label(egui::RichText::new(winner_text).size(24.0).strong().color(color));
                         }
                         None => {
-                            ui.label(
-                                egui::RichText::new("🤝 IT'S A DRAW! 🤝")
-                                    .size(24.0)
-                                    .strong()
-                                    .color(egui::Color32::DARK_BLUE),
-                            );
+                            ui.label(egui::RichText::new("🤝 IT'S A DRAW! 🤝").size(24.0).strong().color(egui::Color32::DARK_BLUE));
                         }
                     }
                 } else {
@@ -158,7 +152,6 @@ impl ConnectFourApp {
                         Player::Red => ("🔴", egui::Color32::from_rgb(180, 60, 60)),
                         Player::Yellow => ("🟡", egui::Color32::from_rgb(180, 140, 60)),
                     };
-
                     let status_text = if let Some(ai_player) = self.ai_player {
                         if current_player == ai_player {
                             format!("{} AI's Turn ({})", emoji, current_player.to_string())
@@ -169,21 +162,28 @@ impl ConnectFourApp {
                         format!("{} Current Player: {}", emoji, current_player.to_string())
                     };
 
-                    ui.label(
-                        egui::RichText::new(status_text)
-                            .size(18.0)
-                            .strong()
-                            .color(color),
-                    );
+                    ui.label(egui::RichText::new(status_text).size(18.0).strong().color(color));
 
                     if let Some(ai_player) = self.ai_player {
                         if self.board.current_player() == ai_player && self.thinking {
                             ui.add_space(5.0);
-                            ui.label(
-                                egui::RichText::new("🤔 AI is thinking...")
-                                    .size(14.0)
-                                    .color(egui::Color32::GRAY),
-                            );
+                            ui.label(egui::RichText::new("🤔 AI is thinking...").size(14.0).color(egui::Color32::GRAY));
+                        }
+                    }
+
+                    if let Some(ai_player) = self.ai_player {
+                        if let Some(moves_to_win) = self.ai_moves_to_win {
+                            if self.board.current_player() == ai_player {
+                                // AI has calculated a win and it's AI's turn
+                                ui.add_space(8.0);
+                                let win_text = format!("🧠 AI has found a winning path! Victory in {moves_to_win} moves");
+                                ui.label(egui::RichText::new(win_text).size(16.0).strong().color(egui::Color32::from_rgb(0, 150, 0)));
+                            } else {
+                                // AI has calculated a win but it's human's turn
+                                ui.add_space(8.0);
+                                let win_text = format!("🎯 AI will win in {moves_to_win} moves (barring mistakes)");
+                                ui.label(egui::RichText::new(win_text).size(15.0).color(egui::Color32::from_rgb(100, 100, 100)));
+                            }
                         }
                     }
                 }
@@ -249,6 +249,8 @@ impl ConnectFourApp {
 
                             if col < COLS && self.board.is_valid_move(col) {
                                 self.board.make_move(col);
+                                // Reset AI analysis after human move
+                                self.ai_moves_to_win = None;
                             }
                         }
                     }
@@ -271,6 +273,7 @@ impl ConnectFourApp {
                 self.game_mode = GameMode::Setup;
                 self.board.reset();
                 self.ai_player = None;
+                self.ai_moves_to_win = None;
             }
 
             ui.add_space(20.0);
@@ -283,6 +286,7 @@ impl ConnectFourApp {
                 .clicked()
             {
                 self.board.reset();
+                self.ai_moves_to_win = None;
             }
         });
 
