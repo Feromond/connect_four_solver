@@ -13,11 +13,11 @@ impl Player {
             Player::Yellow => Player::Red,
         }
     }
-    
+
     pub fn to_string(self) -> &'static str {
         match self {
             Player::Red => "Red",
             Player::Yellow => "Yellow",
         }
     }
-} 
+}

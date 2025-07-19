@@ -1,10 +1,9 @@
-use eframe::egui;
 use crate::egui::IconData;
-use std::path::Path;
 use connect_four_solver::ConnectFourApp;
+use eframe::egui;
+use std::path::Path;
 
 fn main() -> Result<(), eframe::Error> {
-
     let icon_path = Path::new("icon.ico");
 
     let icon_data = if icon_path.exists() {

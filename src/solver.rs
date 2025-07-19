@@ -1,8 +1,14 @@
+use crate::{Board, COLS, Cell, Player, ROWS};
 use std::collections::HashMap;
-use crate::{Board, Player, Cell, ROWS, COLS};
 
 pub struct Solver {
     memo: HashMap<String, i32>,
+}
+
+impl Default for Solver {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Solver {
@@ -23,7 +29,7 @@ impl Solver {
         }
 
         let mut best_move = valid_moves[0];
-        
+
         // Determine if AI should maximize or minimize based on current player
         // Red maximizes (seeks positive scores), Yellow minimizes (seeks negative scores)
         let ai_maximizes = board.current_player() == Player::Red;
@@ -34,7 +40,7 @@ impl Solver {
             new_board.make_move(col);
             // After making the move, it's the opponent's turn, so flip the maximizing flag
             let score = self.minimax(&new_board, depth, i32::MIN, i32::MAX, !ai_maximizes);
-            
+
             if (ai_maximizes && score > best_score) || (!ai_maximizes && score < best_score) {
                 best_score = score;
                 best_move = col;
@@ -44,7 +50,14 @@ impl Solver {
         Some(best_move)
     }
 
-    fn minimax(&mut self, board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizing: bool) -> i32 {
+    fn minimax(
+        &mut self,
+        board: &Board,
+        depth: u8,
+        mut alpha: i32,
+        mut beta: i32,
+        maximizing: bool,
+    ) -> i32 {
         if depth == 0 || board.is_game_over() {
             return self.evaluate_board(board);
         }
@@ -55,7 +68,7 @@ impl Solver {
         }
 
         let valid_moves = board.get_valid_moves();
-        
+
         if maximizing {
             let mut max_eval = i32::MIN;
             for &col in &valid_moves {
@@ -101,7 +114,7 @@ impl Solver {
 
         // Simple heuristic: evaluate based on potential winning positions
         let mut score = 0;
-        
+
         // Evaluate all possible 4-in-a-row positions
         for row in 0..ROWS {
             for col in 0..COLS {
@@ -115,7 +128,14 @@ impl Solver {
         score
     }
 
-    fn evaluate_window(&self, board: &Board, row: usize, col: usize, delta_row: i32, delta_col: i32) -> i32 {
+    fn evaluate_window(
+        &self,
+        board: &Board,
+        row: usize,
+        col: usize,
+        delta_row: i32,
+        delta_col: i32,
+    ) -> i32 {
         let mut red_count = 0;
         let mut yellow_count = 0;
         let mut empty_count = 0;
@@ -173,4 +193,4 @@ impl Solver {
         });
         result
     }
-} 
+}

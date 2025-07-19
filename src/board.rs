@@ -1,4 +1,4 @@
-use crate::{Player, ROWS, COLS};
+use crate::{COLS, Player, ROWS};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cell {
@@ -12,6 +12,12 @@ pub struct Board {
     current_player: Player,
     game_over: bool,
     winner: Option<Player>,
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Board {
@@ -33,7 +39,7 @@ impl Board {
         for row in (0..ROWS).rev() {
             if self.grid[row][col] == Cell::Empty {
                 self.grid[row][col] = Cell::Occupied(self.current_player);
-                
+
                 // Check for win
                 if self.check_win(row, col) {
                     self.game_over = true;
@@ -68,33 +74,52 @@ impl Board {
         };
 
         // Check horizontal
-        if self.count_direction(row, col, 0, 1, player) + 
-           self.count_direction(row, col, 0, -1, player) + 1 >= 4 {
+        if self.count_direction(row, col, 0, 1, player)
+            + self.count_direction(row, col, 0, -1, player)
+            + 1
+            >= 4
+        {
             return true;
         }
 
         // Check vertical
-        if self.count_direction(row, col, 1, 0, player) + 
-           self.count_direction(row, col, -1, 0, player) + 1 >= 4 {
+        if self.count_direction(row, col, 1, 0, player)
+            + self.count_direction(row, col, -1, 0, player)
+            + 1
+            >= 4
+        {
             return true;
         }
 
         // Check diagonal (/)
-        if self.count_direction(row, col, 1, 1, player) + 
-           self.count_direction(row, col, -1, -1, player) + 1 >= 4 {
+        if self.count_direction(row, col, 1, 1, player)
+            + self.count_direction(row, col, -1, -1, player)
+            + 1
+            >= 4
+        {
             return true;
         }
 
         // Check diagonal (\)
-        if self.count_direction(row, col, 1, -1, player) + 
-           self.count_direction(row, col, -1, 1, player) + 1 >= 4 {
+        if self.count_direction(row, col, 1, -1, player)
+            + self.count_direction(row, col, -1, 1, player)
+            + 1
+            >= 4
+        {
             return true;
         }
 
         false
     }
 
-    fn count_direction(&self, row: usize, col: usize, delta_row: i32, delta_col: i32, player: Player) -> usize {
+    fn count_direction(
+        &self,
+        row: usize,
+        col: usize,
+        delta_row: i32,
+        delta_col: i32,
+        player: Player,
+    ) -> usize {
         let mut count = 0;
         let mut r = row as i32 + delta_row;
         let mut c = col as i32 + delta_col;
@@ -141,4 +166,4 @@ impl Board {
         self.game_over = false;
         self.winner = None;
     }
-} 
+}
