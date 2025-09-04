@@ -1,23 +1,41 @@
-use crate::egui::IconData;
 use connect_four_solver::ConnectFourApp;
 use eframe::egui;
+use egui::IconData;
+use log::info;
 use std::path::Path;
 
 fn main() -> Result<(), eframe::Error> {
+    // Initialize logger; ignore errors if already initialized
+    let _ = env_logger::builder().format_timestamp(None).try_init();
+    info!("Starting Connect Four Solver");
+
     let icon_path = Path::new("icon.ico");
 
     let icon_data = if icon_path.exists() {
-        let image = image::open(icon_path)
-            .expect("Failed to open icon.ico")
-            .to_rgba8();
-        let (width, height) = image.dimensions();
-        Some(IconData {
-            rgba: image.into_raw(),
-            width,
-            height,
-        })
+        match image::open(icon_path) {
+            Ok(img) => {
+                let image = img.to_rgba8();
+                let (width, height) = image.dimensions();
+                info!("Loaded window icon from icon.ico ({}x{})", width, height);
+                Some(IconData {
+                    rgba: image.into_raw(),
+                    width,
+                    height,
+                })
+            }
+            Err(_) => {
+                // Fallback: use a transparent 32x32 icon if icon.ico cannot be read
+                info!("icon.ico could not be read; using transparent placeholder icon");
+                Some(IconData {
+                    rgba: vec![0; 32 * 32 * 4],
+                    width: 32,
+                    height: 32,
+                })
+            }
+        }
     } else {
         // Fallback: use a transparent 32x32 icon.
+        info!("icon.ico missing; using transparent placeholder icon");
         Some(IconData {
             rgba: vec![0; 32 * 32 * 4],
             width: 32,

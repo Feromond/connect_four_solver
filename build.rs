@@ -1,11 +1,13 @@
-use {
-    std::{env, io},
-    winresource::WindowsResource,
-};
+use std::{env, io};
+#[cfg(windows)]
+use winresource::WindowsResource;
 
 fn main() -> io::Result<()> {
     if env::var_os("CARGO_CFG_WINDOWS").is_some() {
-        WindowsResource::new().set_icon("icon.ico").compile()?;
+        #[cfg(windows)]
+        {
+            WindowsResource::new().set_icon("icon.ico").compile()?;
+        }
     }
     Ok(())
 }

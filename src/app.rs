@@ -1,6 +1,7 @@
 use crate::{Board, COLS, Cell, Player, ROWS, Solver};
 use eframe::egui;
 use std::time::{Duration, Instant};
+use log::{debug, info};
 
 pub struct ConnectFourApp {
     board: Board,
@@ -61,7 +62,10 @@ impl eframe::App for ConnectFourApp {
         });
 
         self.process_ai_move_with_delay();
-        ctx.request_repaint();
+        // Only request repaint when needed to reduce CPU usage
+        if self.thinking || self.ai_move_timer.is_some() || self.board.is_game_over() {
+            ctx.request_repaint();
+        }
     }
 }
 
@@ -81,7 +85,15 @@ impl ConnectFourApp {
                         self.thinking = true;
                         self.ai_move_timer = None;
 
-                        if let Some(move_result) = self.solver.find_best_move(&self.board, 7) {
+                        if let Some(move_result) = self.solver.find_best_move(&self.board, 9) {
+                            info!(
+                                "AI selects column {}{}",
+                                move_result.column,
+                                move_result
+                                    .moves_to_win
+                                    .map(|m| format!("; win in {m} moves"))
+                                    .unwrap_or_default()
+                            );
                             self.board.make_move(move_result.column);
                             self.ai_moves_to_win = move_result.moves_to_win;
                         }
@@ -303,6 +315,7 @@ impl ConnectFourApp {
                             let col = (relative_pos.x / cell_size) as usize;
 
                             if col < COLS && self.board.is_valid_move(col) {
+                                debug!("Human plays column {}", col);
                                 self.board.make_move(col);
                                 self.ai_moves_to_win = None;
                                 self.ai_move_timer = Some(Instant::now());

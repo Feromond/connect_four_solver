@@ -30,15 +30,31 @@ impl Solver {
         }
     }
 
+    #[cfg(test)]
+    fn clear_cache(&mut self) {
+        self.memo.clear();
+    }
+
     pub fn find_best_move(&mut self, board: &Board, depth: u8) -> Option<MoveResult> {
         if board.is_game_over() {
             return None;
         }
 
-        let valid_moves = board.get_valid_moves();
+        let mut valid_moves = board.get_valid_moves();
         if valid_moves.is_empty() {
             return None;
         }
+
+        // Immediate winning move
+        if let Some(winning_col) = self.find_immediate_win(board) {
+            return Some(MoveResult {
+                column: winning_col,
+                moves_to_win: Some(1),
+            });
+        }
+
+        // Prefer center-first move ordering to improve pruning and play strength
+        self.order_moves_center_out(&mut valid_moves);
 
         let mut best_move = valid_moves[0];
         let mut best_moves_to_win: Option<u8> = None;
@@ -48,10 +64,29 @@ impl Solver {
         let ai_maximizes = board.current_player() == Player::Red;
         let mut best_score = if ai_maximizes { i32::MIN } else { i32::MAX };
 
+        // Root-level losing move avoidance: avoid moves that immediately allow opponent to win
+        // Prefer among non-losing moves if any exist
+        let mut non_losing_candidates: Vec<usize> = Vec::new();
+
         for &col in &valid_moves {
             let mut new_board = board.clone();
             new_board.make_move(col);
             // After making the move, it's the opponent's turn, so flip the maximizing flag
+            let opponent_has_mate_in_1 = self.find_immediate_win(&new_board).is_some();
+            if !opponent_has_mate_in_1 {
+                non_losing_candidates.push(col);
+            }
+        }
+
+        let search_space: Vec<usize> = if !non_losing_candidates.is_empty() {
+            non_losing_candidates
+        } else {
+            valid_moves.clone()
+        };
+
+        for &col in &search_space {
+            let mut new_board = board.clone();
+            new_board.make_move(col);
             let eval_result = self.minimax(&new_board, depth, i32::MIN, i32::MAX, !ai_maximizes);
 
             let is_better = if ai_maximizes {
@@ -121,7 +156,8 @@ impl Solver {
             return cached_result;
         }
 
-        let valid_moves = board.get_valid_moves();
+        let mut valid_moves = board.get_valid_moves();
+        self.order_moves_center_out(&mut valid_moves);
 
         if maximizing {
             let mut best_result = EvalResult {
@@ -213,7 +249,7 @@ impl Solver {
             }; // Draw
         }
 
-        // Simple heuristic: evaluate based on potential winning positions
+        // Heuristic: potential windows + center column control
         let mut score = 0;
 
         // Evaluate all possible 4-in-a-row positions
@@ -225,6 +261,19 @@ impl Solver {
                 score += self.evaluate_window(board, row, col, 1, -1); // Diagonal \
             }
         }
+
+        // Center column preference
+        let center_col = COLS / 2;
+        let mut red_center = 0;
+        let mut yellow_center = 0;
+        for row in 0..ROWS {
+            match board.get_cell(row, center_col) {
+                Cell::Occupied(Player::Red) => red_center += 1,
+                Cell::Occupied(Player::Yellow) => yellow_center += 1,
+                _ => {}
+            }
+        }
+        score += 3 * (red_center as i32) - 3 * (yellow_center as i32);
 
         EvalResult {
             score,
@@ -296,5 +345,44 @@ impl Solver {
             Player::Yellow => '2',
         });
         result
+    }
+
+    fn find_immediate_win(&self, board: &Board) -> Option<usize> {
+        let me = board.current_player();
+        for col in board.get_valid_moves() {
+            let mut nb = board.clone();
+            nb.make_move(col);
+            if nb.is_game_over() && nb.winner() == Some(me) {
+                return Some(col);
+            }
+        }
+        None
+    }
+
+    fn order_moves_center_out(&self, moves: &mut Vec<usize>) {
+        let center = COLS as i32 / 2;
+        moves.sort_by_key(|&c| (c as i32 - center).abs());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn solver_finds_winning_move_in_one() {
+        let mut board = Board::new();
+        // Red to move, three in a row horizontally at bottom row, winning at col 3
+        // Columns indexed 0..6; place at (row 5, cols 0..2) alternating correctly
+        board.make_move(0); // R
+        board.make_move(0); // Y
+        board.make_move(1); // R
+        board.make_move(1); // Y
+        board.make_move(2); // R
+
+        let mut solver = Solver::new();
+        solver.clear_cache();
+        let mv = solver.find_best_move(&board, 4).expect("should have a move");
+        assert_eq!(mv.column, 3);
     }
 }

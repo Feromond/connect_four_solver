@@ -6,19 +6,19 @@ authors = ["Jacob Mish <JacobPMish@gmail.com>"]
 description = "Simple GUI to solve Connect Four games"
 license = "MIT"
 
-[build-dependencies]
-winresource = "0.1.23"
-
 [dependencies]
 eframe = "0.32.0"
 egui = "0.32.0"
 serde = { version = "1.0.219", features = ["derive"] }
 image = "0.25.6"
+log = "0.4"
+env_logger = "0.11"
 
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.9", features = ["winuser", "windef"] }
 
-[dependencies.winapi]
-version = "0.3.9"
-features = ["winuser", "windef"]
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1.23"
 
 [package.metadata.bundle]
 name = "Connect Four Solver"
