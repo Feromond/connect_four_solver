@@ -45,7 +45,7 @@ fn main() -> Result<(), eframe::Error> {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([700.0, 650.0])
+            .with_inner_size([700.0, 740.0])
             .with_icon(icon_data.unwrap()),
         ..Default::default()
     };
