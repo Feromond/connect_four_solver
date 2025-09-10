@@ -273,7 +273,7 @@ impl Solver {
                 _ => {}
             }
         }
-        score += 3 * (red_center as i32) - 3 * (yellow_center as i32);
+        score += 3 * red_center - 3 * yellow_center;
 
         EvalResult {
             score,
@@ -359,7 +359,7 @@ impl Solver {
         None
     }
 
-    fn order_moves_center_out(&self, moves: &mut Vec<usize>) {
+    fn order_moves_center_out(&self, moves: &mut [usize]) {
         let center = COLS as i32 / 2;
         moves.sort_by_key(|&c| (c as i32 - center).abs());
     }
@@ -382,7 +382,9 @@ mod tests {
 
         let mut solver = Solver::new();
         solver.clear_cache();
-        let mv = solver.find_best_move(&board, 4).expect("should have a move");
+        let mv = solver
+            .find_best_move(&board, 4)
+            .expect("should have a move");
         assert_eq!(mv.column, 3);
     }
 }

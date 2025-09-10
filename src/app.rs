@@ -81,15 +81,15 @@ impl ConnectFourApp {
                     self.ai_move_timer = Some(Instant::now());
                 }
 
-                if let Some(timer) = self.ai_move_timer {
-                    if timer.elapsed() >= Duration::from_millis(300) {
+                if let Some(timer) = self.ai_move_timer
+                    && timer.elapsed() >= Duration::from_millis(300) {
                         self.thinking = true;
                         self.ai_move_timer = None;
 
                         if let Some(move_result) = self.solver.find_best_move(&self.board, 9) {
                             let turns_from_here = move_result
                                 .moves_to_win
-                                .map(|plies| (plies + 1) / 2); // ceil(plies/2)
+                                .map(|plies| plies.div_ceil(2)); // ceil(plies/2)
                             info!(
                                 "AI selects column {}{}",
                                 move_result.column,
@@ -108,7 +108,6 @@ impl ConnectFourApp {
 
                         self.thinking = false;
                     }
-                }
             } else {
                 self.ai_move_timer = None;
             }
@@ -220,8 +219,8 @@ impl ConnectFourApp {
                     ui.add_space(5.0);
                     ui.vertical(|ui| {
                         ui.set_min_height(20.0);
-                        if let Some(ai_player) = self.ai_player {
-                            if self.board.current_player() == ai_player
+                        if let Some(ai_player) = self.ai_player
+                            && self.board.current_player() == ai_player
                                 && (self.thinking || self.ai_move_timer.is_some())
                             {
                                 ui.label(
@@ -230,11 +229,10 @@ impl ConnectFourApp {
                                         .color(egui::Color32::GRAY),
                                 );
                             }
-                        }
                     });
 
-                    if let Some(ai_player) = self.ai_player {
-                        if let Some(turns_to_win) = self.ai_turns_to_win {
+                    if let Some(ai_player) = self.ai_player
+                        && let Some(turns_to_win) = self.ai_turns_to_win {
                             // Show AI forced-win info on the human's turn
                             if self.board.current_player() != ai_player && turns_to_win > 0 {
                                 ui.add_space(8.0);
@@ -249,7 +247,6 @@ impl ConnectFourApp {
                                 );
                             }
                         }
-                    }
                 }
                 ui.add_space(5.0);
             });
@@ -314,14 +311,13 @@ impl ConnectFourApp {
                 }
             }
 
-            if response.clicked() {
-                if let Some(ai_player) = self.ai_player {
-                    if self.board.current_player() != ai_player
+            if response.clicked()
+                && let Some(ai_player) = self.ai_player
+                    && self.board.current_player() != ai_player
                         && !self.board.is_game_over()
                         && !self.thinking
                         && self.ai_move_timer.is_none()
-                    {
-                        if let Some(pos) = response.interact_pointer_pos() {
+                        && let Some(pos) = response.interact_pointer_pos() {
                             let relative_pos = pos - rect.min;
                             let col = (relative_pos.x / cell_size) as usize;
 
@@ -332,9 +328,6 @@ impl ConnectFourApp {
                                 self.ai_move_timer = Some(Instant::now());
                             }
                         }
-                    }
-                }
-            }
         });
 
         ui.add_space(20.0);
