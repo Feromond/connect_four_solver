@@ -7,8 +7,8 @@ description = "Simple GUI to solve Connect Four games"
 license = "MIT"
 
 [dependencies]
-eframe = "0.32.0"
-egui = "0.32.0"
+eframe = "0.32.2"
+egui = "0.32.2"
 serde = { version = "1.0.219", features = ["derive"] }
 image = "0.25.6"
 log = "0.4"
@@ -24,4 +24,4 @@ winresource = "0.1.23"
 name = "Connect Four Solver"
 identifier = "io.github.Feromond.connect_four_solver"
 description = "Simple GUI to solve Connect Four games"
-icon = ["./icon.icns"]
+icon = ["./icons.icns"]

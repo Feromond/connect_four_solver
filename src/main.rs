@@ -43,10 +43,19 @@ fn main() -> Result<(), eframe::Error> {
         })
     };
 
+    #[cfg(not(target_os = "macos"))]
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([700.0, 740.0])
             .with_icon(icon_data.unwrap()),
+        ..Default::default()
+    };
+
+    #[cfg(target_os = "macos")]
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([700.0, 740.0])
+            .with_icon(IconData::default()), // This allows for default os icon, which will be set in cargo bundle
         ..Default::default()
     };
 
