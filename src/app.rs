@@ -223,7 +223,7 @@ impl ConnectFourApp {
                             && (self.thinking || self.ai_move_timer.is_some())
                         {
                             ui.label(
-                                egui::RichText::new("🤔 AI is thinking...")
+                                egui::RichText::new("💭 AI is thinking...")
                                     .size(14.0)
                                     .color(egui::Color32::GRAY),
                             );
