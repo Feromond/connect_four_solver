@@ -2,15 +2,16 @@ use connect_four_solver::ConnectFourApp;
 use eframe::egui;
 use egui::IconData;
 use log::info;
+#[cfg(not(target_os = "macos"))]
 use std::path::Path;
 
 fn main() -> Result<(), eframe::Error> {
     // Initialize logger; ignore errors if already initialized
     let _ = env_logger::builder().format_timestamp(None).try_init();
     info!("Starting Connect Four Solver");
-
+    #[cfg(not(target_os = "macos"))]
     let icon_path = Path::new("icon.ico");
-
+    #[cfg(not(target_os = "macos"))]
     let icon_data = if icon_path.exists() {
         match image::open(icon_path) {
             Ok(img) => {
