@@ -24,4 +24,4 @@ winresource = "0.1.23"
 name = "Connect Four Solver"
 identifier = "io.github.Feromond.connect_four_solver"
 description = "Simple GUI to solve Connect Four games"
-icon = ["./icon.png"]
+icon = ["./icon.icns"]
