@@ -216,7 +216,7 @@ impl ConnectFourApp {
                     );
 
                     ui.add_space(5.0);
-                    ui.vertical(|ui| {
+                    ui.vertical_centered(|ui| {
                         ui.set_min_height(20.0);
                         if let Some(ai_player) = self.ai_player
                             && self.board.current_player() == ai_player
