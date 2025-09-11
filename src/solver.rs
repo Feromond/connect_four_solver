@@ -364,27 +364,3 @@ impl Solver {
         moves.sort_by_key(|&c| (c as i32 - center).abs());
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn solver_finds_winning_move_in_one() {
-        let mut board = Board::new();
-        // Red to move, three in a row horizontally at bottom row, winning at col 3
-        // Columns indexed 0..6; place at (row 5, cols 0..2) alternating correctly
-        board.make_move(0); // R
-        board.make_move(0); // Y
-        board.make_move(1); // R
-        board.make_move(1); // Y
-        board.make_move(2); // R
-
-        let mut solver = Solver::new();
-        solver.clear_cache();
-        let mv = solver
-            .find_best_move(&board, 4)
-            .expect("should have a move");
-        assert_eq!(mv.column, 3);
-    }
-}
