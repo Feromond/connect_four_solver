@@ -4,6 +4,11 @@ Cross-platform desktop app to play and analyze Connect Four. Comes with a fast A
 
 ### Quick look
 
+<img width="600" height="1444" alt="image" src="https://github.com/user-attachments/assets/c8275580-e3a7-4fcb-9781-c27d1b68251e" />
+<img width="600" height="1462" alt="image" src="https://github.com/user-attachments/assets/401a2f02-9ab3-4786-9b25-8af7e6b03643" />
+
+
+
 ### Features
 
 - **Play vs. AI or watch AI move**: Choose who goes first on a simple setup screen.
