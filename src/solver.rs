@@ -30,11 +30,6 @@ impl Solver {
         }
     }
 
-    #[cfg(test)]
-    fn clear_cache(&mut self) {
-        self.memo.clear();
-    }
-
     pub fn find_best_move(&mut self, board: &Board, depth: u8) -> Option<MoveResult> {
         if board.is_game_over() {
             return None;
